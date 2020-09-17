@@ -1,5 +1,7 @@
 # Calculate-grade
  DHKHTN
+
+
 0. open college transcripts on portal  
 1. right mouse click => inspect
 2. change to console tab
