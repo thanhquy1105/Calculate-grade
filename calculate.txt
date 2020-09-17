@@ -1,0 +1,118 @@
+var linkExcel = "Link";
+var sumPoint = 0.0;
+var sumSubject = 0;
+var dataTable = [];
+var sumAccumulatedSubject = 0;
+
+var calculate_point = () => {
+  let isEvaluate = true;
+  var table = document.getElementById("tbDiemThiGK");
+  var rows_length = table.rows.length;
+  const skipSubject = [
+    "BAA00011 - Anh văn 1",
+    "BAA00012 - Anh văn 2",
+    "BAA00013 - Anh văn 3",
+    "BAA00014 - Anh văn 4",
+    "BAA00021 - Thể dục 1",
+    "BAA00022 - Thể dục 2",
+    "BAA00030 - Giáo dục quốc phòng",
+  ];
+
+  for (i = 1; i < rows_length; i++) {
+    const oCells = table.rows.item(i).cells;
+    if (oCells[5].innerText === "(*)") {
+      // console.log(
+      //   `Bạn chưa đánh giá môn học ${oCells[1].innerText.split(" - ")[1]}`
+      // );
+      isEvaluate = false;
+    }
+    var isDuplicate = false;
+    var isSkipSubject = false;
+    var isPassSubject = true;
+    //check duplicate
+    for (j = i - 1; j >= 1; j--) {
+      const oCells2 = table.rows.item(j).cells;
+      if (i !== j)
+        if (
+          oCells[1].innerText === oCells2[1].innerText &&
+          oCells[5].innerText === oCells2[5].innerText
+        )
+          isDuplicate = true;
+    }
+    //check skip subject
+    for (k = 0; k < skipSubject.length; k++) {
+      if (oCells[1].innerText === skipSubject[k]) isSkipSubject = true;
+      //check have point < 5
+      if (parseFloat(oCells[5].innerText) < 5) isPassSubject = false;
+    }
+
+    if (oCells[5].innerText && !isDuplicate && isPassSubject) {
+      dataTable.push({
+        year: oCells[0].innerText,
+        subjectCode: oCells[1].innerText.split(" - ")[0],
+        subjectName: oCells[1].innerText.split(" - ")[1],
+        numberCredit: oCells[2].innerText,
+        class: oCells[3].innerText,
+        LDCode: oCells[4].innerText,
+        point: oCells[5].innerText,
+      });
+      oCells[2].innerText &&
+      oCells[5].innerText &&
+      oCells[5].innerText !== "(*)"
+        ? (sumSubject += parseInt(oCells[2].innerText))
+        : null;
+      if (!isSkipSubject) {
+        oCells[2].innerText &&
+        oCells[5].innerText &&
+        oCells[5].innerText !== "(*)"
+          ? (sumAccumulatedSubject += parseInt(oCells[2].innerText))
+          : null;
+        oCells[2].innerText &&
+        oCells[5].innerText &&
+        oCells[5].innerText !== "(*)"
+          ? (sumPoint +=
+              parseFloat(oCells[5].innerText) * parseFloat(oCells[2].innerText))
+          : null;
+      }
+    }
+  }
+  //Show log
+  console.log(
+    "Số tín chỉ tích lũy: " + sumSubject + " (Đã bao gồm AV, TD, GDQP)"
+  );
+  isEvaluate
+    ? console.log(
+        "Điểm trung bình tích lũy: " + sumPoint / sumAccumulatedSubject
+      )
+    : console.log(
+        "Điểm trung bình tích lũy: " +
+          sumPoint / sumAccumulatedSubject +
+          " (chưa bạo gồm các môn bạn không đánh giá môn học)\nHướng dẫn sữa lỗi: Bạn hãy đăng nhập và thử lại và đừng chọn vào ô học kì"
+      );
+};
+
+const start = async () => {
+  //Ajax to get link excel file
+  await $.ajax({
+    url:
+      "https://cors-anywhere.herokuapp.com/https://hcmus-processing.herokuapp.com/getDownload",
+    // "http://localhost:3000/getDownload",
+    type: "POST",
+    data: {
+      table: JSON.stringify(dataTable),
+      sumPoint: sumPoint,
+      sumSubject: sumSubject,
+      sumAccumulatedSubject: sumAccumulatedSubject,
+    },
+    headers: { "Access-Control-Allow-Origin": "*" },
+    success: function (response) {
+      if (response.redirect !== undefined && response.redirect) {
+        linkExcel = response.redirect_url.toString();
+      }
+    },
+  });
+  console.log("Link download File Excel: " + linkExcel);
+};
+
+calculate_point();
+start();
